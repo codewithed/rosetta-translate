@@ -1,0 +1,70 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Thumbnails
+._*
+
+# Files that might appear in the root of a volume
+.Spotlight-V100
+.Trashes
+
+# IDEs and editors
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.sublime-workspace
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Node.js / React Native (Frontend)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+/frontend/.expo/
+/frontend/dist/ # For Expo web builds or other build outputs
+# Add any other frontend build/artifact folders if they arise, e.g., /frontend/web-build/
+
+# Java / Maven (Backend)
+/backend/target/
+/backend/keys/
+*.class
+*.log # General log files, can be more specific if needed
+*.jar
+*.war
+*.ear
+
+# Environment variables (Your existing rules)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.development
+.env.test
+.env.production
+.env
+backend/.env
+
+# Sensitive files
+gcp_credentials.json
+service-account-key.json
+*.pem
+*.key
+
+# Build logs (generic, can be more specific if needed)
+build/
+dist/
+
+# Other temporary files or OS specific files
+.tmp/
+*.swp
+*~
