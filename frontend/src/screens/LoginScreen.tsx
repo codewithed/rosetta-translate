@@ -50,7 +50,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                     </View>
 
                     {/* Login Title */}
-                    <Text style={styles.loginTitle}>Login</Text>
+                    <Text style={styles.loginTitle}>Sign in</Text>
 
                     {/* Login Form */}
                     <View style={styles.formContainer}>
@@ -99,7 +99,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                                 style={styles.loginButtonGradient}
                             >
                                 <Text style={styles.loginButtonText}>
-                                    {isLoading ? "Signing In..." : "Sign In"}
+                                    {isLoading ? "Signing in..." : "Sign in"}
                                 </Text>
                             </LinearGradient>
                         </TouchableOpacity>
@@ -109,7 +109,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                             onPress={() => navigation.navigate('Register')}
                             disabled={isLoading}
                         >
-                            <Text style={styles.registerButtonText}>Sign Up</Text>
+                            <Text style={styles.registerButtonText}>Sign up</Text>
                         </TouchableOpacity>
                     </View>
                 </View>

@@ -43,7 +43,7 @@ const AuthFlow = () => (
         }}
     >
         <AuthStackNav.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
-        <AuthStackNav.Screen name="Register" component={RegisterScreen} options={{ title: 'Create Account' }} />
+        <AuthStackNav.Screen name="Register" component={RegisterScreen} options={{ headerShown: false }} />
     </AuthStackNav.Navigator>
 );
 

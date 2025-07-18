@@ -1,9 +1,71 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView, TextInput, ActivityIndicator, Switch } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView, TextInput, ActivityIndicator, Switch, Modal, FlatList } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { UserPreferenceData } from '../services/apiService';
+import { SUPPORTED_LANGUAGES, Language } from '../constants/languages'; // Import SUPPORTED_LANGUAGES and Language
+import theme from '../constants/theme'; // Assuming you have a theme file for consistent styling
+
+// Re-defining LanguageSelectionModal here or import it if it's in a separate file
+// For this example, I'll put it here for completeness, but ideally, it's a shared component.
+const LanguageSelectionModal: React.FC<{
+    visible: boolean;
+    onClose: () => void;
+    onSelectLanguage: (language: Language) => void;
+    languages: Language[];
+}> = ({ visible, onClose, onSelectLanguage, languages }) => {
+    const [searchTerm, setSearchTerm] = useState('');
+
+    const filteredLanguages = languages.filter(lang =>
+        lang.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        lang.code.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    const renderItem = ({ item }: { item: Language }) => (
+        <TouchableOpacity
+            style={modalStyles.modalLanguageItem}
+            onPress={() => {
+                onSelectLanguage(item);
+                onClose();
+            }}
+        >
+            <Text style={modalStyles.modalLanguageText}>{item.name} ({item.code.toUpperCase()})</Text>
+        </TouchableOpacity>
+    );
+
+    return (
+        <Modal
+            animationType="slide"
+            transparent={true}
+            visible={visible}
+            onRequestClose={onClose}
+        >
+            <View style={modalStyles.modalOverlay}>
+                <View style={modalStyles.modalContent}>
+                    <TextInput
+                        style={modalStyles.modalSearchInput}
+                        placeholder="Search language..."
+                        value={searchTerm}
+                        onChangeText={setSearchTerm}
+                    />
+                    <FlatList
+                        data={filteredLanguages}
+                        renderItem={renderItem}
+                        keyExtractor={(item) => item.code}
+                        initialNumToRender={15}
+                        maxToRenderPerBatch={10}
+                        windowSize={10}
+                    />
+                    <TouchableOpacity onPress={onClose} style={modalStyles.modalCloseButton}>
+                        <Text style={modalStyles.modalCloseButtonText}>Close</Text>
+                    </TouchableOpacity>
+                </View>
+            </View>
+        </Modal>
+    );
+};
+
 
 const ProfileScreen: React.FC = () => {
     const { user, logout, updateUserProfile, isLoading: authIsLoading } = useAuth();
@@ -12,17 +74,21 @@ const ProfileScreen: React.FC = () => {
     const [preferredTargetLang, setPreferredTargetLang] = useState('');
     const [isSaving, setIsSaving] = useState(false);
 
+    // State for language selection modal
+    const [isLanguageModalVisible, setIsLanguageModalVisible] = useState(false);
+    const [languageModalType, setLanguageModalType] = useState<'source' | 'target' | null>(null);
+
     useEffect(() => {
         if (user) {
             setPreferredSourceLang(user.preferences?.preferredSourceLang || '');
             setPreferredTargetLang(user.preferences?.preferredTargetLang || '');
-            
+
             const currentSettingsString = user.settings || '{}';
             try {
                 const parsedSettings = JSON.parse(currentSettingsString);
-                
+
             } catch (e) {
-               console.warn("Failed to parse user settings JSON", e);
+                console.warn("Failed to parse user settings JSON", e);
             }
         }
     }, [user]);
@@ -42,6 +108,15 @@ const ProfileScreen: React.FC = () => {
                 }
             ]
         );
+    };
+
+    const handleSelectLanguage = (language: Language) => {
+        if (languageModalType === 'source') {
+            setPreferredSourceLang(language.code);
+        } else if (languageModalType === 'target') {
+            setPreferredTargetLang(language.code);
+        }
+        setIsLanguageModalVisible(false);
     };
 
     const handleSaveChanges = async () => {
@@ -66,6 +141,11 @@ const ProfileScreen: React.FC = () => {
         } finally {
             setIsSaving(false);
         }
+    };
+
+    const getLanguageName = (code: string) => {
+        const lang = SUPPORTED_LANGUAGES.find(l => l.code === code);
+        return lang ? `${lang.name} (${lang.code.toUpperCase()})` : code;
     };
 
     if (authIsLoading && !user) {
@@ -98,33 +178,37 @@ const ProfileScreen: React.FC = () => {
 
                     <View style={styles.sectionCard}>
                         <Text style={styles.sectionTitle}>Preferences</Text>
-                        
+
                         <View style={styles.inputContainer}>
                             <Text style={styles.inputLabel}>Preferred Source Language</Text>
-                            <TextInput
-                                style={styles.modernInput}
-                                value={preferredSourceLang}
-                                onChangeText={setPreferredSourceLang}
-                                placeholder="e.g., en-US or auto"
-                                editable={!isSaving && !authIsLoading}
-                                autoCapitalize="none"
-                            />
+                            <TouchableOpacity
+                                style={styles.languageSelectButton}
+                                onPress={() => { setLanguageModalType('source'); setIsLanguageModalVisible(true); }}
+                                disabled={isSaving || authIsLoading}
+                            >
+                                <Text style={styles.languageSelectButtonText}>
+                                    {preferredSourceLang ? getLanguageName(preferredSourceLang) : 'Select Language'}
+                                </Text>
+                                <Ionicons name="chevron-forward" size={20} color="#7F8C8D" />
+                            </TouchableOpacity>
                         </View>
 
                         <View style={styles.inputContainer}>
                             <Text style={styles.inputLabel}>Preferred Target Language</Text>
-                            <TextInput
-                                style={styles.modernInput}
-                                value={preferredTargetLang}
-                                onChangeText={setPreferredTargetLang}
-                                placeholder="e.g., es-ES or fr-FR"
-                                editable={!isSaving && !authIsLoading}
-                                autoCapitalize="none"
-                            />
+                            <TouchableOpacity
+                                style={styles.languageSelectButton}
+                                onPress={() => { setLanguageModalType('target'); setIsLanguageModalVisible(true); }}
+                                disabled={isSaving || authIsLoading}
+                            >
+                                <Text style={styles.languageSelectButtonText}>
+                                    {preferredTargetLang ? getLanguageName(preferredTargetLang) : 'Select Language'}
+                                </Text>
+                                <Ionicons name="chevron-forward" size={20} color="#7F8C8D" />
+                            </TouchableOpacity>
                         </View>
 
 
-                        <TouchableOpacity 
+                        <TouchableOpacity
                             style={[styles.saveButton, (isSaving || authIsLoading) && styles.saveButtonDisabled]}
                             onPress={handleSaveChanges}
                             disabled={isSaving || authIsLoading}
@@ -144,7 +228,7 @@ const ProfileScreen: React.FC = () => {
                 !authIsLoading && <Text style={styles.errorText}>User data not available. Please try logging in again.</Text>
             )}
 
-            <TouchableOpacity 
+            <TouchableOpacity
                 style={styles.logoutButton}
                 onPress={handleLogout}
                 disabled={authIsLoading || isSaving}
@@ -154,6 +238,13 @@ const ProfileScreen: React.FC = () => {
                     {authIsLoading ? "Loading..." : "Logout"}
                 </Text>
             </TouchableOpacity>
+
+            <LanguageSelectionModal
+                visible={isLanguageModalVisible}
+                onClose={() => setIsLanguageModalVisible(false)}
+                onSelectLanguage={handleSelectLanguage}
+                languages={SUPPORTED_LANGUAGES}
+            />
         </ScrollView>
     );
 };
@@ -230,7 +321,7 @@ const styles = StyleSheet.create({
         color: '#2C3E50',
         marginBottom: 8,
     },
-    modernInput: {
+    modernInput: { // This style is no longer directly used for the input, but kept in case
         borderWidth: 1,
         borderColor: '#E0E0E0',
         borderRadius: 12,
@@ -239,6 +330,23 @@ const styles = StyleSheet.create({
         fontSize: 16,
         backgroundColor: '#FAFAFA',
         color: '#2C3E50',
+    },
+    languageSelectButton: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#E0E0E0',
+        borderRadius: 12,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        backgroundColor: '#FAFAFA',
+        minHeight: 48,
+    },
+    languageSelectButtonText: {
+        fontSize: 16,
+        color: '#2C3E50',
+        flex: 1,
     },
     settingRow: {
         flexDirection: 'row',
@@ -312,5 +420,58 @@ const styles = StyleSheet.create({
         margin: 20,
     },
 });
+
+// Styles for LanguageSelectionModal (can be moved to a shared styles file)
+const modalStyles = StyleSheet.create({
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalContent: {
+        backgroundColor: 'white', // Use theme.colors.white if available
+        borderRadius: 16, // Use theme.borders.radiusLarge if available
+        padding: 20, // Use theme.spacing.lg if available
+        width: '90%',
+        maxHeight: '80%',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
+        elevation: 5,
+    },
+    modalSearchInput: {
+        borderWidth: 1,
+        borderColor: '#C0C0C0', // Use theme.colors.mediumGray if available
+        borderRadius: 8, // Use theme.borders.radiusSmall if available
+        paddingHorizontal: 16, // Use theme.spacing.md if available
+        paddingVertical: 12, // Use theme.spacing.sm if available
+        marginBottom: 16, // Use theme.spacing.md if available
+        fontSize: 16,
+    },
+    modalLanguageItem: {
+        paddingVertical: 12, // Use theme.spacing.md if available
+        borderBottomWidth: 1,
+        borderBottomColor: '#F0F0F0', // Use theme.colors.lightGray if available
+    },
+    modalLanguageText: {
+        fontSize: 16,
+        color: '#2C3E50', // Use theme.colors.darkGray if available
+    },
+    modalCloseButton: {
+        marginTop: 16, // Use theme.spacing.md if available
+        backgroundColor: '#FF6B35', // Use theme.colors.primaryOrange if available
+        paddingVertical: 12, // Use theme.spacing.sm if available
+        borderRadius: 8, // Use theme.borders.radiusMedium if available
+        alignItems: 'center',
+    },
+    modalCloseButtonText: {
+        color: 'white', // Use theme.colors.white if available
+        fontSize: 16,
+        fontWeight: '600',
+    },
+});
+
 
 export default ProfileScreen;
