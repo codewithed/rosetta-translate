@@ -1,54 +1,36 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { SavedItemResponse, SavedItemCategory } from '../services/apiService';
+import { SavedItemResponse } from '../services/apiService';
+import { TranslationItem } from '../utils/storage';
 
 interface SavedItemListItemProps {
-    item: SavedItemResponse;
+    item: TranslationItem;
     onPress?: () => void;
-    onEdit?: () => void;
     onDelete?: () => void;
     onToggleFavorite?: () => void; // Assuming translations can still be favorited independently
 }
 
-const getCategoryDisplayName = (category: SavedItemCategory) => {
-    switch (category) {
-        case SavedItemCategory.PHRASE: return 'Phrase';
-        case SavedItemCategory.WORD: return 'Word';
-        case SavedItemCategory.SENTENCE: return 'Sentence';
-        case SavedItemCategory.PARAGRAPH: return 'Paragraph';
-        default: return 'Other';
-    }
-};
 
-const SavedItemListItem: React.FC<SavedItemListItemProps> = ({ item, onPress, onEdit, onDelete, onToggleFavorite }) => {
-    const { translation, name, notes, category } = item; // Removed isFavorite from here
+const SavedItemListItem: React.FC<SavedItemListItemProps> = ({ item, onPress, onDelete, onToggleFavorite }) => {
 
     return (
         <TouchableOpacity onPress={onPress} style={styles.container}>
             <View style={styles.contentContainer}>
-                {name && <Text style={styles.name}>{name}</Text>}
                 <Text style={styles.translationText}>
-                    <Text style={styles.langLabel}>{translation.sourceLang}: </Text>{translation.sourceText}
+                    <Text style={styles.langLabel}>{item.sourceLang}: </Text>{item.originalText}
                 </Text>
                 <Text style={styles.translationText}>
-                    <Text style={styles.langLabel}>{translation.targetLang}: </Text>{translation.targetText}
+                    <Text style={styles.langLabel}>{item.targetLang}: </Text>{item.translatedText}
                 </Text>
-                {notes && <Text style={styles.notes}>Notes: {notes}</Text>}
                 <View style={styles.footer}>
-                    <Text style={styles.category}>Category: {getCategoryDisplayName(category)}</Text>
-                    <Text style={styles.date}>{new Date(item.createdAt).toLocaleDateString()}</Text>
+                    <Text style={styles.date}>{new Date(item.timestamp).toLocaleDateString()}</Text>
                 </View>
             </View>
             <View style={styles.actionsContainer}>
                 {onToggleFavorite && (
                     <TouchableOpacity onPress={onToggleFavorite} style={styles.iconButton}>
-                        <Ionicons name={translation.isFavorite ? "heart" : "heart-outline"} size={24} color={translation.isFavorite ? "red" : "#555"} />
-                    </TouchableOpacity>
-                )}
-                {onEdit && (
-                    <TouchableOpacity onPress={onEdit} style={styles.iconButton}>
-                        <Ionicons name="pencil-outline" size={24} color="blue" />
+                        <Ionicons name={item.isFavorite ? "heart" : "heart-outline"} size={24} color={item.isFavorite ? "red" : "#555"} />
                     </TouchableOpacity>
                 )}
                 {onDelete && (

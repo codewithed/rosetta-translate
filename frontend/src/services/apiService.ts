@@ -203,6 +203,7 @@ export interface TranslationResponse {
     targetLang: string;
     inputType: InputType;
     isFavorite: boolean;
+    isSaved: boolean;
     tags?: string | null;
     createdAt: string; 
 }
@@ -326,7 +327,6 @@ export interface SavedItemUpdatePayload {
 export interface SavedItemResponse {
     id: string;
     translation: TranslationResponse; // Nested translation details
-    category: SavedItemCategory;
     folderId?: string | null;
     folderName?: string | null;
     name?: string;
@@ -340,11 +340,18 @@ export const createSavedItem = async (payload: SavedItemCreatePayload): Promise<
     return response.data;
 };
 
-export const getSavedItems = async (category?: SavedItemCategory, folderId?: string | null, page: number = 0, size: number = 20): Promise<Page<SavedItemResponse>> => {
+export const getSavedItems = async (
+    category?: SavedItemCategory,
+    folderId?: string | null,
+    page: number = 0,
+    size: number = 20,
+    isFavorite?: boolean
+): Promise<Page<SavedItemResponse>> => {
     if (!authToken) throw new Error('No auth token available');
-    const params: any = { page, size , };
+    const params: any = { page, size };
     if (category) params.category = category;
     if (folderId) params.folderId = folderId;
+    if (isFavorite !== undefined) params.isFavorite = isFavorite; // Pass the isFavorite flag to the backend
     const response = await apiClient.get<Page<SavedItemResponse>>('/saved-items', { params });
     return response.data;
 };

@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { InputType } from '../constants/enums';
 
 const HISTORY_KEY = 'translationHistory';
 
@@ -10,7 +11,8 @@ interface TranslationItem {
   targetLang: string;
   timestamp: number;
   isSaved: boolean;
-  inputType?: string;
+  isFavorite: boolean;
+  inputType: InputType;
 }
 
 export const saveTranslationToHistory = async (translation: TranslationItem) => {

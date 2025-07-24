@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { TranslationItem } from '../utils/storage';
+import { TranslationItem } from '../utils/storage'; // Simplified import
 import { Ionicons } from '@expo/vector-icons';
 
 interface TranslationListProps {
@@ -9,6 +9,7 @@ interface TranslationListProps {
     onItemPress?: (item: TranslationItem) => void;
     onDeleteItem?: (id: string) => void;
     onToggleSave?: (item: TranslationItem) => void;
+    onToggleFavorite?: (item: TranslationItem) => void;
     listType: 'history' | 'saved';
     onLoadMore?: () => void;
     isLoadingMore?: boolean;
@@ -19,7 +20,8 @@ const TranslationList: React.FC<TranslationListProps> = ({
     items, 
     onItemPress, 
     onDeleteItem, 
-    onToggleSave, 
+    onToggleSave,
+    onToggleFavorite, 
     listType, 
     onLoadMore,
     isLoadingMore,
@@ -56,7 +58,7 @@ const TranslationList: React.FC<TranslationListProps> = ({
                     {/* Save/Bookmark Icon */}
                     {onToggleSave && (
                         <TouchableOpacity 
-                            onPress={() => onToggleSave(item)} 
+                            onPress={() => onToggleSave(item)} // MODIFIED: Calls the handler from props
                             style={[styles.iconButton, styles.saveButton]}
                         >
                             <Ionicons 
@@ -68,15 +70,15 @@ const TranslationList: React.FC<TranslationListProps> = ({
                     )}
                     
                     {/* Favorite/Heart Icon */}
-                    {onToggleSave && (listType === 'history') && (
+                    {onToggleFavorite && (
                         <TouchableOpacity 
-                            onPress={() => onToggleSave(item)} 
+                            onPress={() => onToggleFavorite(item)} // MODIFIED: Calls the handler from props
                             style={[styles.iconButton, styles.favoriteButton]}
                         >
                             <Ionicons 
-                                name={item.isSaved ? "heart" : "heart-outline"} 
+                                name={item.isFavorite ? "heart" : "heart-outline"} 
                                 size={22} 
-                                color={item.isSaved ? "#E74C3C" : "#BDC3C7"} 
+                                color={item.isFavorite ? "#E74C3C" : "#BDC3C7"} 
                             />
                         </TouchableOpacity>
                     )}

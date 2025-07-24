@@ -125,7 +125,7 @@ const ConversationScreen: React.FC = () => {
                     );
                     isTransitioningRef.current = false;
                 } catch (error) {
-                    console.error('Error starting playback:', error);
+                    // console.error('Error starting playback:', error);
                     resetPlaybackState();
                 }
             };
@@ -137,8 +137,8 @@ const ConversationScreen: React.FC = () => {
     const ensureRecordingDirectory = async () => {
         const baseCacheDir = FileSystem.cacheDirectory;
         if (!baseCacheDir) {
-            console.error('[ConversationScreen] ensureRecordingDirectory: CRITICAL - Cache directory is null or undefined.');
-            Alert.alert('Directory Error', 'Critical error: Cache directory path is invalid.');
+            // console.error('[ConversationScreen] ensureRecordingDirectory: CRITICAL - Cache directory is null or undefined.');
+            // Alert.alert('Directory Error', 'Critical error: Cache directory path is invalid.');
             throw new Error('Cache directory path is invalid');
         }
         const recordingDir = baseCacheDir + 'ExpoAudio/';
@@ -151,7 +151,7 @@ const ConversationScreen: React.FC = () => {
                 await FileSystem.makeDirectoryAsync(recordingDir, { intermediates: true });
                 console.log('[ConversationScreen] ensureRecordingDirectory: Recording directory created successfully.');
             } catch (error) {
-                console.error('[ConversationScreen] ensureRecordingDirectory: Error creating recording directory:', error);
+                // console.error('[ConversationScreen] ensureRecordingDirectory: Error creating recording directory:', error);
                 Alert.alert('Directory Error', 'Could not create recording directory.');
                 throw error;
             }
@@ -168,7 +168,7 @@ const ConversationScreen: React.FC = () => {
                 Alert.alert('Copied!', `${type} copied to clipboard.`);
                 console.log('Copy successful.');
             } catch (e) {
-                console.error('Failed to copy text to clipboard:', e);
+                // console.error('Failed to copy text to clipboard:', e);
                 Alert.alert('Copy Failed', 'Could not copy text to clipboard.');
             }
         } else {
@@ -186,7 +186,7 @@ const ConversationScreen: React.FC = () => {
             }
             return true;
         } catch (error) {
-            console.error("Error requesting microphone permission:", error);
+            // console.error("Error requesting microphone permission:", error);
             Alert.alert('Permission Error', 'Could not request microphone permission.');
             return false;
         }
@@ -286,7 +286,7 @@ const ConversationScreen: React.FC = () => {
                     throw new Error('TTS file was not created properly or is empty');
                 }
             } catch (fileError) {
-                console.error('[ConversationScreen] Error writing TTS file:', fileError);
+                // console.error('[ConversationScreen] Error writing TTS file:', fileError);
                 Alert.alert('Error', 'Failed to create audio file for translation.');
                 setIsLoading(false);
                 return;
@@ -308,7 +308,7 @@ const ConversationScreen: React.FC = () => {
             if (speaker === 'userA') setTextA(''); else setTextB('');
 
         } catch (error: any) {
-            console.error('[ConversationScreen] processTurn: Error:', error);
+            // console.error('[ConversationScreen] processTurn: Error:', error);
             Alert.alert('Error', error.message || 'An unexpected error occurred during processing.');
         } finally {
             setIsLoading(false);
@@ -332,11 +332,11 @@ const ConversationScreen: React.FC = () => {
                 if (uri && typeof uri === 'string' && uri.trim()) {
                     processTurn(speaker, uri);
                 } else {
-                    console.error('[ConversationScreen] handleRecord: Invalid URI after stopping recording:', uri);
+                    // console.error('[ConversationScreen] handleRecord: Invalid URI after stopping recording:', uri);
                     Alert.alert('Recording Error', 'Failed to get a valid audio recording file.');
                 }
             } catch (err: any) {
-                console.error('[ConversationScreen] handleRecord: Error stopping recording:', err);
+                // console.error('[ConversationScreen] handleRecord: Error stopping recording:', err);
                 Alert.alert('Recording Error', 'Failed to stop recording.');
                 if (speaker === 'userA') setIsRecordingA(false); else setIsRecordingB(false);
             }
@@ -361,7 +361,7 @@ const ConversationScreen: React.FC = () => {
                 console.log('[ConversationScreen] handleRecord: Recording started successfully');
                 if (speaker === 'userA') setIsRecordingA(true); else setIsRecordingB(true);
             } catch (err: any) {
-                console.error('[ConversationScreen] handleRecord: Error starting recording:', err);
+                // console.error('[ConversationScreen] handleRecord: Error starting recording:', err);
                 Alert.alert('Recording Error', `Failed to start recording: ${err.message}`);
                 if (speaker === 'userA') setIsRecordingA(false); else setIsRecordingB(false);
             }
@@ -387,7 +387,7 @@ const ConversationScreen: React.FC = () => {
             // Verify the audio file exists and is valid
             const fileInfo = await FileSystem.getInfoAsync(turn.audioUri);
             if (!fileInfo.exists || fileInfo.size === 0) {
-                console.error('Audio file does not exist or is empty:', turn.audioUri);
+               // console.error('Audio file does not exist or is empty:', turn.audioUri);
                 Alert.alert('Playback Error', 'Audio file not found or is empty.');
                 return;
             }
@@ -421,7 +421,7 @@ const ConversationScreen: React.FC = () => {
             setAudioSource(turn.audioUri);
 
         } catch (error) {
-            console.error('Playback error:', error);
+            //console.error('Playback error:', error);
             Alert.alert('Playback Error', 'Failed to play audio.');
             resetPlaybackState();
         }

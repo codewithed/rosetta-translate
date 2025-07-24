@@ -1,35 +1,50 @@
 import React, { useState, useCallback } from 'react';
-import { View, StyleSheet, Button, Alert, ActivityIndicator, Text } from 'react-native';
+import { View, StyleSheet, Button, Alert, ActivityIndicator, Text, Modal } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import { Picker } from '@react-native-picker/picker';
 import TranslationList from '../components/TranslationList';
 import {
     getTranslations as apiGetTranslations,
     deleteTranslation as apiDeleteTranslation,
-    toggleFavoriteTranslation as apiToggleTranslationFavorite,
+    toggleFavoriteTranslation as apiToggleFavorite,
     TranslationResponse as ApiTranslationResponse,
     Page,
-    ApiResponse
 } from '../services/apiService';
-import { saveTranslationToHistory, getTranslationHistory, clearTranslationHistory } from '../utils/historyStorage';
+import { 
+    getTranslationHistory,
+    clearTranslationHistory,
+    deleteTranslationFromHistory,
+    updateTranslationInHistory,
+    batchSaveTranslations,
+} from '../utils/historyStorage';
+import {
+    saveItemToFolder,
+    getFolders,
+    initializeDefaultFolder,
+    createNewFolder,
+    FolderItem,
+    toggleFavorite, // Import the main toggleFavorite function
+    TranslationItem, // Import TranslationItem for type consistency
+} from '../utils/storage';
 import { InputType } from '../constants/enums';
+import theme from '../constants/theme';
 
-interface LocalTranslationItem {
-    id: string;
-    originalText: string;
-    translatedText: string;
-    sourceLang: string;
-    targetLang: string;
-    timestamp: number;
-    isSaved: boolean;
-    inputType?: InputType;
-    isDeleting?: boolean;
-    isUpdating?: boolean;
-}
+const RNPicker: any = Picker;
+
+// Use the main TranslationItem interface for consistency
+type LocalTranslationItem = TranslationItem;
 
 const HistoryScreen: React.FC = () => {
     const [historyItems, setHistoryItems] = useState<LocalTranslationItem[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    // State for Save to Folder Modal (reused from HomeScreen)
+    const [isSaveModalVisible, setIsSaveModalVisible] = useState(false);
+    const [itemToSave, setItemToSave] = useState<LocalTranslationItem | null>(null);
+    const [userFolders, setUserFolders] = useState<FolderItem[]>([]);
+    const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
+    const [isFoldersLoading, setIsFoldersLoading] = useState(false);
 
     const mapApiToLocal = (apiItem: ApiTranslationResponse): LocalTranslationItem => ({
         id: apiItem.id,
@@ -38,68 +53,27 @@ const HistoryScreen: React.FC = () => {
         sourceLang: apiItem.sourceLang,
         targetLang: apiItem.targetLang,
         timestamp: new Date(apiItem.createdAt).getTime(),
-        isSaved: apiItem.isFavorite ?? false,
-        inputType: InputType.TEXT, // Defaulting to TEXT, adjust if API provides this
-        isDeleting: false,
-        isUpdating: false,
-    });
-
-    const ensureLocalItemStructure = (item: any): LocalTranslationItem => ({
-        id: item.id,
-        originalText: item.originalText,
-        translatedText: item.translatedText,
-        sourceLang: item.sourceLang,
-        targetLang: item.targetLang,
-        timestamp: item.timestamp,
-        isSaved: item.isSaved ?? false,
-        inputType: typeof item.inputType === 'string' ? 
-            (Object.values(InputType).includes(item.inputType as InputType) ? 
-                item.inputType as InputType : InputType.TEXT) : 
-            (item.inputType || InputType.TEXT),
-        isDeleting: item.isDeleting || false,
-        isUpdating: item.isUpdating || false,
+        isSaved: apiItem.isSaved ?? false,
+        isFavorite: apiItem.isFavorite ?? false,
+        inputType: apiItem.inputType || 'text',
     });
 
     const loadHistory = useCallback(async () => {
         setIsLoading(true);
         setError(null);
         try {
-            // First, try to load from local storage
-            const localHistory = await getTranslationHistory();
-            const normalizedLocalHistory = localHistory.map(ensureLocalItemStructure);
-            setHistoryItems(normalizedLocalHistory);
-
-            // Then, attempt to fetch from API and update local storage
-            const response: Page<ApiTranslationResponse> = await apiGetTranslations(0, 50); // Fetch a reasonable amount
+            const response: Page<ApiTranslationResponse> = await apiGetTranslations(0, 100);
             const apiHistory = response.content.map(mapApiToLocal);
-
-            // Merge and deduplicate: prioritize API data, then local data
-            const mergedHistoryMap = new Map<string, LocalTranslationItem>();
-            apiHistory.forEach(item => mergedHistoryMap.set(item.id, item));
-            normalizedLocalHistory.forEach((item: LocalTranslationItem) => {
-                if (!mergedHistoryMap.has(item.id)) {
-                    mergedHistoryMap.set(item.id, item);
-                }
-            });
-            const finalHistory = Array.from(mergedHistoryMap.values()).sort((a, b) => b.timestamp - a.timestamp);
-            setHistoryItems(finalHistory);
-
-            // Optionally, persist the merged history back to local storage
-            // This ensures local storage is up-to-date with the latest from API
-            await clearTranslationHistory(); // Clear before saving to avoid duplicates
-            for (const item of finalHistory) {
-                await saveTranslationToHistory(item);
-            }
-
+            await batchSaveTranslations(apiHistory);
+            setHistoryItems(apiHistory);
         } catch (err: any) {
-            console.error('Failed to load history:', err);
-            setError(err.message || 'Failed to fetch history. Displaying local cache.');
-            // If API fails, ensure we still display local history if available
+            // console.error('Failed to load history from API:', err);
+            setError('Failed to fetch history. Displaying cached data.');
             const localHistory = await getTranslationHistory();
-            const normalizedLocalHistory = localHistory.map(ensureLocalItemStructure);
-            setHistoryItems(normalizedLocalHistory);
+            setHistoryItems(localHistory);
+        } finally {
+            setIsLoading(false);
         }
-        setIsLoading(false);
     }, []);
 
     useFocusEffect(
@@ -108,82 +82,110 @@ const HistoryScreen: React.FC = () => {
         }, [loadHistory])
     );
 
-    const handleDeleteItem = async (id: string) => {
-        // Update UI immediately to show deleting state
-        setHistoryItems(prevItems => 
-            prevItems.map(item => 
-                item.id === id ? { ...item, isDeleting: true } : item
+    const handleDeleteItem = (id: string) => {
+        setHistoryItems(prevItems => prevItems.filter(item => item.id !== id));
+        apiDeleteTranslation(id).catch((err) => {
+            // console.error('API delete failed:', err);
+            // Alert.alert('Error', 'Failed to delete from server. Restoring history.');
+            loadHistory();
+        });
+        deleteTranslationFromHistory(id);
+    };
+
+    const handleToggleFavorite = (itemToToggle: LocalTranslationItem) => {
+        const newFavoriteState = !itemToToggle.isFavorite;
+        // Optimistically update the UI
+        setHistoryItems(prevItems =>
+            prevItems.map(item =>
+                item.id === itemToToggle.id
+                    ? { ...item, isFavorite: newFavoriteState }
+                    : item
             )
         );
+        // Update the history cache
+        updateTranslationInHistory({ ...itemToToggle, isFavorite: newFavoriteState });
 
+        // Call the main toggleFavorite function which handles API calls and Saved Items storage
+        toggleFavorite(itemToToggle).catch((err) => {
+            // console.error('Toggle favorite failed:', err);
+            // Alert.alert('Error', "Couldn't sync favorite status.");
+            loadHistory(); // Revert on error
+        });
+    };
+
+    const openSaveModal = async (item: LocalTranslationItem) => {
+        setItemToSave(item);
+        setIsFoldersLoading(true);
+        setIsSaveModalVisible(true);
         try {
-            await apiDeleteTranslation(id);
-            // Remove from local storage as well
-            const updatedHistory = historyItems.filter(item => item.id !== id);
-            setHistoryItems(updatedHistory);
-            await clearTranslationHistory();
-            for (const item of updatedHistory) {
-                await saveTranslationToHistory(item);
-            }
-        } catch (err: any) {
-            // Reset deleting state on error
-            setHistoryItems(prevItems => 
-                prevItems.map(item => 
-                    item.id === id ? { ...item, isDeleting: false } : item
-                )
-            );
-            Alert.alert('Error', 'Failed to delete translation.');
+            const defaultFolder = await initializeDefaultFolder();
+            const folders = await getFolders();
+            setUserFolders(folders);
+            setSelectedFolderId(defaultFolder.id);
+        } catch (error) {
+            // console.error("Failed to load folders for save modal:", error);
+            Alert.alert("Error", "Could not load your folders.");
+        } finally {
+            setIsFoldersLoading(false);
         }
     };
 
-    const handleToggleSave = async (item: LocalTranslationItem) => {
-        // Update UI immediately to show updating state
-        setHistoryItems(prevItems => 
-            prevItems.map(hItem => 
-                hItem.id === item.id ? { ...hItem, isUpdating: true } : hItem
-            )
-        );
-
-        try {
-            const updatedApiItem = await apiToggleTranslationFavorite(item.id);
-            const updatedLocalItem = mapApiToLocal(updatedApiItem);
-
-            const updatedHistory = historyItems.map(hItem => 
-                hItem.id === updatedLocalItem.id ? updatedLocalItem : hItem
-            );
-            setHistoryItems(updatedHistory);
-
-            // Update local storage
-            await clearTranslationHistory();
-            for (const hItem of updatedHistory) {
-                await saveTranslationToHistory(hItem);
+    const handleCreateNewFolderInPopup = () => {
+        Alert.prompt("New Folder", "Enter a name for your new folder:", async (folderName) => {
+            if (folderName) {
+                try {
+                    setIsFoldersLoading(true);
+                    const newFolder = await createNewFolder(folderName);
+                    setUserFolders(prev => [...prev, newFolder]);
+                    setSelectedFolderId(newFolder.id);
+                    Alert.alert("Success", `Folder "${folderName}" created and selected.`);
+                } catch (err: any) {
+                    Alert.alert("Error", `Could not create folder: ${err.message}`);
+                } finally {
+                    setIsFoldersLoading(false);
+                }
             }
+        });
+    };
 
-        } catch (err: any) {
-            // Reset updating state on error
-            setHistoryItems(prevItems => 
-                prevItems.map(hItem => 
-                    hItem.id === item.id ? { ...hItem, isUpdating: false } : hItem
+    const handleSaveItem = async () => {
+        if (!itemToSave || !selectedFolderId) return;
+        
+        setIsLoading(true);
+        try {
+            const apiItem: ApiTranslationResponse = {
+                id: itemToSave.id,
+                sourceText: itemToSave.originalText,
+                targetText: itemToSave.translatedText,
+                sourceLang: itemToSave.sourceLang,
+                targetLang: itemToSave.targetLang,
+                isFavorite: itemToSave.isFavorite,
+                isSaved: true,
+                inputType: itemToSave.inputType,
+                createdAt: new Date(itemToSave.timestamp).toISOString(),
+            };
+            await saveItemToFolder(apiItem, selectedFolderId);
+            
+            setHistoryItems(prevItems =>
+                prevItems.map(item =>
+                    item.id === itemToSave.id ? { ...item, isSaved: true } : item
                 )
             );
-            Alert.alert('Error', 'Failed to update favorite status.');
+            updateTranslationInHistory({ ...itemToSave, isSaved: true });
+
+            Alert.alert("Success", "Item saved successfully!");
+            setIsSaveModalVisible(false);
+            setItemToSave(null);
+        } catch (err: any) {
+            Alert.alert("Error", "Could not save item.");
+        } finally {
+            setIsLoading(false);
         }
     };
-    
-    const handleClearHistory = async () => {
-        Alert.alert(
-            "Clear History",
-            "This will clear your LOCAL history cache. A backend 'clear all' is not yet supported. Continue?",
-            [
-                { text: "Cancel", style: "cancel" },
-                { text: "Clear Local Cache", onPress: async () => {
-                    setIsLoading(true);
-                    await clearTranslationHistory();
-                    setHistoryItems([]); // Clear displayed items
-                    setIsLoading(false);
-                    Alert.alert("Local Cache Cleared", "Your local history cache has been cleared.");
-                }, style: "destructive" }
-            ]
+
+    const handleClearHistory = () => {
+        Alert.alert("Clear History", "Are you sure you want to delete all items from your history?",
+            [{ text: "Cancel", style: "cancel" }, { text: "Clear All", onPress: async () => { setHistoryItems([]); await clearTranslationHistory(); }, style: "destructive" }]
         );
     };
 
@@ -192,32 +194,56 @@ const HistoryScreen: React.FC = () => {
     }
 
     if (error && historyItems.length === 0) {
-        return <View style={styles.centered}><Text style={styles.errorText}>{error}</Text><Button title="Retry" onPress={() => loadHistory()} /></View>;
+        return <View style={styles.centered}><Text style={styles.errorText}>{error}</Text><Button title="Retry" onPress={loadHistory} /></View>;
     }
 
     return (
         <View style={styles.container}>
             {historyItems.length > 0 && (
                 <View style={styles.clearButtonContainer}>
-                    <Button title="Clear Local History Cache" onPress={handleClearHistory} color="orange" />
+                    <Button title="Clear History" onPress={handleClearHistory} color="#E53935" />
                 </View>
             )}
             <TranslationList 
-                items={historyItems.map(item => ({
-                    ...item,
-                    isSaved: item.isSaved ?? false // Ensure isSaved is always boolean
-                }))} 
-                onDeleteItem={(id) => handleDeleteItem(id)} 
-                onToggleSave={(item) => {
-                    // Find the original item to pass to handleToggleSave
-                    const originalItem = historyItems.find(hItem => hItem.id === item.id);
-                    if (originalItem) {
-                        handleToggleSave(originalItem);
-                    }
-                }}
+                items={historyItems} 
+                onDeleteItem={handleDeleteItem} 
+                onToggleSave={openSaveModal}
+                onToggleFavorite={handleToggleFavorite}
                 listType="history"
-                // onLoadMore and hasMore props are removed as local storage doesn't have pagination
             />
+            <Modal
+                animationType="slide"
+                transparent={true}
+                visible={isSaveModalVisible}
+                onRequestClose={() => setIsSaveModalVisible(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <Text style={styles.modalTitle}>Save to Folder</Text>
+                        {isFoldersLoading ? <ActivityIndicator /> : (
+                            <>
+                                <View style={styles.pickerContainer}>
+                                     <RNPicker
+                                        selectedValue={selectedFolderId}
+                                        onValueChange={(itemValue: string | null) => setSelectedFolderId(itemValue)}
+                                    >
+                                        {userFolders.map((folder) => (
+                                            <RNPicker.Item key={folder.id} label={folder.name} value={folder.id} />
+                                        ))}
+                                    </RNPicker>
+                                </View>
+                                <View style={styles.modalButtonContainer}>
+                                    <Button title="New Folder" onPress={handleCreateNewFolderInPopup} />
+                                </View>
+                            </>
+                        )}
+                        <View style={styles.modalButtonContainer}>
+                            <Button title="Cancel" onPress={() => setIsSaveModalVisible(false)} color="#888" />
+                            <Button title="Save" onPress={handleSaveItem} disabled={isFoldersLoading || !selectedFolderId} />
+                        </View>
+                    </View>
+                </View>
+            </Modal>
         </View>
     );
 };
@@ -228,19 +254,58 @@ const styles = StyleSheet.create({
         backgroundColor: '#f5f5f5',
     },
     clearButtonContainer: {
-        padding: 10,
+        paddingVertical: 8,
+        paddingHorizontal: 16,
         borderBottomWidth: 1,
-        borderBottomColor: '#eee',
+        borderBottomColor: '#e0e0e0',
+        backgroundColor: '#fff',
     },
     centered: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
+        padding: 20,
     },
     errorText: {
         color: 'red',
         marginBottom: 10,
-    }
+        textAlign: 'center',
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalContent: {
+        backgroundColor: theme.colors.white,
+        borderRadius: theme.borders.radiusLarge,
+        padding: theme.spacing.lg,
+        width: '90%',
+        maxHeight: '80%',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
+        elevation: 5,
+    },
+    modalTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        marginBottom: 20,
+        textAlign: 'center'
+    },
+    pickerContainer: {
+        borderWidth: 1,
+        borderColor: '#ddd',
+        borderRadius: 5,
+        marginBottom: 15
+    },
+    modalButtonContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        marginTop: 20,
+    },
 });
 
 export default HistoryScreen;
