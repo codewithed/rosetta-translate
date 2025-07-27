@@ -2,5 +2,4 @@
 target/classes
 target/generated
 target/maven*
-keys/
-gcp_credentials.json
+gcp_credentials*

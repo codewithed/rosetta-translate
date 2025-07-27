@@ -18,25 +18,18 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.FileSystemResource;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Paths;
+import java.io.ByteArrayInputStream;
+import java.util.Base64;
 
 @Configuration
 public class GoogleCloudConfig {
 
-    @Value("${google.cloud.credentials}")
-    private String gcpCredentialsPath;
+    @Value("${google.cloud.credentials.base64}")
+    private String gcpCredentialsPath64;
 
-    private GoogleCredentials getCredentials() throws IOException {
-        // Construct the absolute path to the credentials file
-        String projectBaseDir = System.getProperty("user.dir"); 
-        String absoluteCredentialsPath = Paths.get(projectBaseDir, gcpCredentialsPath).toString();
-
-        // For debugging, you can print this path:
-        // System.out.println("Attempting to load credentials from absolute path: " + absoluteCredentialsPath);
-
-        InputStream credentialsStream = new FileSystemResource(absoluteCredentialsPath).getInputStream();
-        return GoogleCredentials.fromStream(credentialsStream);
+    public GoogleCredentials getCredentials() throws IOException {
+        byte[] decoded = Base64.getDecoder().decode(gcpCredentialsPath64);
+        return GoogleCredentials.fromStream(new ByteArrayInputStream(decoded));
     }
 
     @Bean

@@ -3,3 +3,7 @@ build/
 .git/
 *.iml
 .mvn/
+target/classes
+target/generated
+target/maven*
+gcp_credentials*
