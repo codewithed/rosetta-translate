@@ -236,8 +236,8 @@ const ConversationScreen: React.FC = () => {
                     return;
                 }
 
-                const fileName = prefixedAudioUri.split('/').pop() || 'audio.wav';
-                const fileType = 'audio/wav';
+                const fileName = prefixedAudioUri.split('/').pop() || Platform.OS === 'ios' ? 'recording.wav' : 'recording.amr';
+                const fileType = Platform.OS === 'ios' ? 'audio/wav' : 'audio/awb';
 
                 const sttResponse = await apiSpeechToText({ uri: prefixedAudioUri, name: fileName, type: fileType }, sourceLangWithRegion);
                 if (!sttResponse.success || typeof sttResponse.message !== 'string' || !sttResponse.message) {
@@ -260,7 +260,7 @@ const ConversationScreen: React.FC = () => {
             const translatedText = translateResponse.message;
 
             const ttsResponse = await apiTextToSpeech({ text: translatedText, languageCode: targetLangWithRegion });
-            if (!ttsResponse.success || !ttsResponse.data || typeof ttsResponse.data !== 'string') {
+            if (!ttsResponse.success || !ttsResponse.data) {
                 throw new Error(ttsResponse.message || 'Text-to-speech failed or returned no audio data.');
             }
 
@@ -278,13 +278,6 @@ const ConversationScreen: React.FC = () => {
                 // Wait a moment for the file system to sync
                 await new Promise(resolve => setTimeout(resolve, 100));
                 
-                // Verify the TTS file was created successfully
-                const ttsFileInfo = await FileSystem.getInfoAsync(ttsAudioUri);
-                console.log('[ConversationScreen] TTS file info:', JSON.stringify(ttsFileInfo));
-                
-                if (!ttsFileInfo.exists || ttsFileInfo.size === 0) {
-                    throw new Error('TTS file was not created properly or is empty');
-                }
             } catch (fileError) {
                 // console.error('[ConversationScreen] Error writing TTS file:', fileError);
                 Alert.alert('Error', 'Failed to create audio file for translation.');
@@ -379,7 +372,7 @@ const ConversationScreen: React.FC = () => {
             // If this audio is currently playing, pause it
             if (currentPlayingId === turnId && playerStatus.isLoaded && playerStatus.playing) {
                 console.log('Pausing currently playing audio:', turnId);
-                await player.pause();
+                player.pause();
                 resetPlaybackState();
                 return;
             }
@@ -401,7 +394,7 @@ const ConversationScreen: React.FC = () => {
             // Stop any currently playing audio first
             if (currentPlayingId && playerStatus.isLoaded && (playerStatus.playing || playerStatus.didJustFinish)) {
                 console.log('Stopping currently playing audio:', currentPlayingId);
-                await player.pause();
+                player.pause();
                 // Wait a moment for the player to fully stop
                 await new Promise(resolve => setTimeout(resolve, 100));
             }
