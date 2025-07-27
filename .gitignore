@@ -34,11 +34,8 @@ yarn-error.log*
 # Add any other frontend build/artifact folders if they arise, e.g., /frontend/web-build/
 
 # Java / Maven (Backend)
-/backend/target/
-/backend/keys/
 *.class
 *.log # General log files, can be more specific if needed
-*.jar
 *.war
 *.ear
 
