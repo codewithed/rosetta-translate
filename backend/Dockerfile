@@ -1,17 +1,12 @@
-# Use an official OpenJDK base image
-FROM openjdk:21-jdk-slim
-
-# Create app directory inside the container
+# Multi-stage Dockerfile
+FROM maven:3.9-openjdk-21 AS build
 WORKDIR /app
+COPY pom.xml .
+COPY src ./src
+RUN mvn clean package -DskipTests
 
-# Copy the jar into the container
-COPY target/backend-0.0.1-SNAPSHOT.jar app.jar
-
-# Set environment variable
-ENV PORT=8080
-
-# Expose port 8080
+FROM openjdk:21-jdk-slim
+WORKDIR /app
+COPY --from=build /app/target/backend-0.0.1-SNAPSHOT.jar app.jar
 EXPOSE 8080
-
-# Run the jar
 ENTRYPOINT ["java", "-jar", "app.jar"]
