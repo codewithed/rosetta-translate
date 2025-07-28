@@ -1,5 +1,5 @@
 # Multi-stage Dockerfile
-FROM amazoncorreto:21-alpine3.22-jdk AS build
+FROM amazoncorretto:21-alpine3.22-jdk AS build
 WORKDIR /app
 COPY pom.xml .
 COPY src ./src
