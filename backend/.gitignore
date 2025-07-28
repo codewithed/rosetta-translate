@@ -1,5 +1,5 @@
 .env
 target/classes
-target/generated
+target/generated*
 target/maven*
 gcp_credentials*
