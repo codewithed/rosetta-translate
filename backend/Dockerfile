@@ -1,17 +1,27 @@
-# Use an official OpenJDK base image
-FROM openjdk:21-jdk-slim
+# Stage 1: Build the application
+FROM maven:3.9.6-eclipse-temurin-21 AS build
 
-# Create app directory inside the container
 WORKDIR /app
 
-# Copy the jar into the container
-COPY target/backend-0.0.1-SNAPSHOT.jar app.jar
+# Copy only pom.xml first for better Docker layer caching
+COPY pom.xml .
+RUN mvn dependency:go-offline
 
-# Set environment variable
+# Copy source code and build
+COPY src ./src
+RUN mvn clean package -DskipTests
+
+# Stage 2: Create runtime image
+FROM eclipse-temurin:21-jre
+
+WORKDIR /app
+
+# Copy the JAR file (using wildcard to avoid hardcoding version)
+COPY --from=build /app/target/*.jar app.jar
+
+# Set environment variables and port configuration
 ENV PORT=8080
-
-# Expose port 8080
 EXPOSE 8080
 
-# Run the jar
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# Add JVM options for containerized environments
+ENTRYPOINT ["java", "-XX:+UseContainerSupport", "-XX:MaxRAMPercentage=75.0", "-Dio.netty.native.workdir=/tmp", "-Dcom.sun.management.jmxremote", "-jar", "app.jar"]
