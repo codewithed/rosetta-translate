@@ -19,6 +19,8 @@ WORKDIR /app
 # Copy the JAR file (using wildcard to avoid hardcoding version)
 COPY --from=build /app/target/*.jar app.jar
 
+# Set environment variables and port configuration
+ENV PORT=8080
 EXPOSE 8080
 
 # Add JVM options for containerized environments
