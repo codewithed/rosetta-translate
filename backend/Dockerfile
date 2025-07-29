@@ -12,7 +12,7 @@ COPY src ./src
 RUN mvn clean package -DskipTests
 
 # Stage 2: Create runtime image
-FROM amazoncorretto:21.0.8-alpine3.22
+FROM eclipse-temurin:21-jre
 
 WORKDIR /app
 
@@ -22,4 +22,4 @@ COPY --from=build /app/target/*.jar app.jar
 EXPOSE 8080
 
 # Add JVM options for containerized environments
-ENTRYPOINT ["java", "-XX:+UseContainerSupport", "-XX:MaxRAMPercentage=75.0", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-XX:+UseContainerSupport", "-XX:MaxRAMPercentage=75.0", "-Dio.netty.native.workdir=/tmp", "-Dcom.sun.management.jmxremote", "-jar", "app.jar"]
