@@ -134,12 +134,19 @@ const HistoryScreen: React.FC = () => {
   const openSaveModal = async (item: LocalTranslationItem) => {
     setItemToSave(item);
     setIsFoldersLoading(true);
-    setIsSaveModalVisible(true);
+
     try {
       const defaultFolder = await initializeDefaultFolder();
       const folders = await getFolders();
+      console.log("Loaded folders for save modal:", folders);
+
       setUserFolders(folders);
-      setSelectedFolderId(defaultFolder.id);
+
+      const found = folders.find((f) => f.id === defaultFolder.id);
+      setSelectedFolderId(
+        found ? String(found.id) : folders[0] ? String(folders[0].id) : ""
+      );
+      setIsSaveModalVisible(true);
     } catch (error) {
       // console.error("Failed to load folders for save modal:", error);
       Alert.alert("Error", "Could not load your folders.");
@@ -278,15 +285,15 @@ const HistoryScreen: React.FC = () => {
                 <View style={styles.pickerContainer}>
                   <RNPicker
                     selectedValue={selectedFolderId}
-                    onValueChange={(itemValue: string | null) =>
+                    onValueChange={(itemValue: string) =>
                       setSelectedFolderId(itemValue)
                     }
                   >
                     {userFolders.map((folder) => (
                       <RNPicker.Item
-                        key={folder.id}
+                        key={String(folder.id)}
                         label={folder.name}
-                        value={folder.id}
+                        value={String(folder.id)}
                       />
                     ))}
                   </RNPicker>
