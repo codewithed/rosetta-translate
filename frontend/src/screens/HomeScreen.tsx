@@ -80,7 +80,6 @@ const HomeScreen: React.FC = () => {
   const [userFolders, setUserFolders] = useState<FolderItem[]>([]);
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const [isFoldersLoading, setIsFoldersLoading] = useState(false);
-  const [pickerKey, setPickerKey] = useState(0);
 
   // Other state variables from original component
   const audioRecorder = useAudioRecorder(optionsForRecorder);
