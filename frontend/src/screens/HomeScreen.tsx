@@ -78,7 +78,7 @@ const HomeScreen: React.FC = () => {
     null
   );
   const [userFolders, setUserFolders] = useState<FolderItem[]>([]);
-  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
+  const [selectedFolderId, setSelectedFolderId] = useState<string>("");
   const [isFoldersLoading, setIsFoldersLoading] = useState(false);
 
   // Other state variables from original component
@@ -474,11 +474,14 @@ const HomeScreen: React.FC = () => {
     try {
       const defaultFolder = await initializeDefaultFolder();
       const folders = await getFolders();
+      console.log("Loaded folders for save modal:", folders);
 
       setUserFolders(folders);
 
       const found = folders.find((f) => f.id === defaultFolder.id);
-      setSelectedFolderId(found ? found.id : (folders[0]?.id ?? null));
+      setSelectedFolderId(
+        found ? String(found.id) : folders[0] ? String(folders[0].id) : ""
+      );
 
       setIsSaveModalVisible(true);
     } catch (error) {
@@ -931,15 +934,15 @@ const HomeScreen: React.FC = () => {
                 <View style={styles.pickerContainer}>
                   <Picker
                     selectedValue={selectedFolderId}
-                    onValueChange={(itemValue: string | null) =>
+                    onValueChange={(itemValue: string) =>
                       setSelectedFolderId(itemValue)
                     }
                   >
                     {userFolders.map((folder) => (
                       <Picker.Item
-                        key={folder.id}
+                        key={String(folder.id)}
                         label={folder.name}
-                        value={folder.id}
+                        value={String(folder.id)}
                       />
                     ))}
                   </Picker>
