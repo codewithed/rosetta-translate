@@ -55,8 +55,6 @@ import * as FileSystem from "expo-file-system";
 import { SUPPORTED_LANGUAGES, Language } from "../constants/languages";
 import { Picker } from "@react-native-picker/picker";
 
-const RNPicker: any = Picker;
-
 const HomeScreen: React.FC = () => {
   const { user } = useAuth();
   const [currentPlaybackUri, setCurrentPlaybackUri] = useState<string | null>(
@@ -82,6 +80,7 @@ const HomeScreen: React.FC = () => {
   const [userFolders, setUserFolders] = useState<FolderItem[]>([]);
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const [isFoldersLoading, setIsFoldersLoading] = useState(false);
+  const [pickerKey, setPickerKey] = useState(0);
 
   // Other state variables from original component
   const audioRecorder = useAudioRecorder(optionsForRecorder);
@@ -292,7 +291,7 @@ const HomeScreen: React.FC = () => {
         name:
           uri.split("/").pop() || Platform.OS === "ios"
             ? "recording.wav"
-            : "recording.amr",
+            : "recording.3gp",
         type: Platform.OS === "ios" ? "audio/wav" : "audio/awb", // Ensure this matches your recording options
       } as any;
 
@@ -472,22 +471,25 @@ const HomeScreen: React.FC = () => {
   const openSaveModal = async (item: ApiTranslationResponse) => {
     setItemToSave(item);
     setIsFoldersLoading(true);
-    setIsSaveModalVisible(true);
+
     try {
-      // First, ensure the default 'Saved' folder exists
       const defaultFolder = await initializeDefaultFolder();
-      // Then, get the full list of folders which now includes the default
       const folders = await getFolders();
+
       setUserFolders(folders);
-      // Set the 'Saved' folder as the default selection
-      setSelectedFolderId(defaultFolder.id);
+
+      const found = folders.find((f) => f.id === defaultFolder.id);
+      setSelectedFolderId(found ? found.id : (folders[0]?.id ?? null));
+
+      setIsSaveModalVisible(true);
     } catch (error) {
-      // console.error("Failed to load folders for save modal:", error);
-      //Alert.alert("Error", "Could not load your folders.");
+      Alert.alert("Error", "Could not load your folders.");
     } finally {
       setIsFoldersLoading(false);
     }
   };
+
+  // Replace the entire openSaveModal function with this one
 
   const handleCreateNewFolderInPopup = () => {
     Alert.prompt(
@@ -913,7 +915,7 @@ const HomeScreen: React.FC = () => {
         onSelectLanguage={handleSelectLanguage}
         languages={SUPPORTED_LANGUAGES}
       />
-      {/* Save to Folder Modal */}
+
       <Modal
         animationType="slide"
         transparent={true}
@@ -928,20 +930,20 @@ const HomeScreen: React.FC = () => {
             ) : (
               <>
                 <View style={styles.pickerContainer}>
-                  <RNPicker
+                  <Picker
                     selectedValue={selectedFolderId}
                     onValueChange={(itemValue: string | null) =>
                       setSelectedFolderId(itemValue)
                     }
                   >
                     {userFolders.map((folder) => (
-                      <RNPicker.Item
+                      <Picker.Item
                         key={folder.id}
                         label={folder.name}
                         value={folder.id}
                       />
                     ))}
-                  </RNPicker>
+                  </Picker>
                 </View>
                 <View style={styles.modalButtonContainer}>
                   <Button
@@ -971,14 +973,66 @@ const HomeScreen: React.FC = () => {
 };
 
 // LanguageSelectionModal and styles remain unchanged from the original file.
+
 const LanguageSelectionModal: React.FC<{
   visible: boolean;
   onClose: () => void;
   onSelectLanguage: (language: Language) => void;
   languages: Language[];
 }> = ({ visible, onClose, onSelectLanguage, languages }) => {
-  // ... modal implementation
-  return <Modal visible={visible} onRequestClose={onClose}></Modal>;
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const filteredLanguages = languages.filter(
+    (lang) =>
+      lang.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      lang.code.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const renderItem = ({ item }: { item: Language }) => (
+    <TouchableOpacity
+      style={styles.modalLanguageItem}
+      onPress={() => {
+        onSelectLanguage(item);
+        // This modal also calls onClose directly, which is fine.
+        onClose();
+      }}
+    >
+      <Text style={styles.modalLanguageText}>
+        {item.name} ({item.code.toUpperCase()})
+      </Text>
+    </TouchableOpacity>
+  );
+
+  return (
+    <Modal
+      animationType="slide"
+      transparent={true}
+      visible={visible}
+      onRequestClose={onClose}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+          <RNTextInput
+            style={styles.modalSearchInput}
+            placeholder="Search language..."
+            value={searchTerm}
+            onChangeText={setSearchTerm}
+          />
+          <FlatList
+            data={filteredLanguages}
+            renderItem={renderItem}
+            keyExtractor={(item) => item.code}
+            initialNumToRender={15}
+            maxToRenderPerBatch={10}
+            windowSize={10}
+          />
+          <TouchableOpacity onPress={onClose} style={styles.modalCloseButton}>
+            <Text style={styles.modalCloseButtonText}>Close</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
 };
 
 const styles = StyleSheet.create({
@@ -1088,6 +1142,7 @@ const styles = StyleSheet.create({
     color: theme.colors.primaryOrange,
     marginTop: theme.spacing.xs,
   },
+  // Modal styles (for both modals)
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.5)",
@@ -1122,6 +1177,43 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-around",
     marginTop: 20,
+  },
+  // Style that was causing the error, now corrected
+  languageItemText: {
+    ...theme.typography.body1, // FIX: Changed 'body' to 'body1'
+    color: theme.colors.darkGray,
+    textAlign: "center",
+  },
+  // Styles for the new Language Selection Modal
+  modalSearchInput: {
+    borderWidth: 1,
+    borderColor: theme.colors.mediumGray,
+    borderRadius: theme.borders.radiusSmall,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
+    marginBottom: theme.spacing.md,
+    fontSize: 16,
+  },
+  modalLanguageItem: {
+    paddingVertical: theme.spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.lightGray,
+  },
+  modalLanguageText: {
+    fontSize: 16,
+    color: theme.colors.darkGray,
+  },
+  modalCloseButton: {
+    marginTop: theme.spacing.md,
+    backgroundColor: theme.colors.primaryOrange,
+    paddingVertical: theme.spacing.sm,
+    borderRadius: theme.borders.radiusMedium,
+    alignItems: "center",
+  },
+  modalCloseButtonText: {
+    color: theme.colors.white,
+    fontSize: 16,
+    fontWeight: "600",
   },
 });
 
