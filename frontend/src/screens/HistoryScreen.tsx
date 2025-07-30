@@ -7,7 +7,9 @@ import {
   ActivityIndicator,
   Text,
   Modal,
+  TouchableOpacity,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
 import { Picker } from "@react-native-picker/picker";
 import TranslationList from "../components/TranslationList";
@@ -134,12 +136,19 @@ const HistoryScreen: React.FC = () => {
   const openSaveModal = async (item: LocalTranslationItem) => {
     setItemToSave(item);
     setIsFoldersLoading(true);
-    setIsSaveModalVisible(true);
+
     try {
       const defaultFolder = await initializeDefaultFolder();
       const folders = await getFolders();
+      console.log("Loaded folders for save modal:", folders);
+
       setUserFolders(folders);
-      setSelectedFolderId(defaultFolder.id);
+
+      const found = folders.find((f) => f.id === defaultFolder.id);
+      setSelectedFolderId(
+        found ? String(found.id) : folders[0] ? String(folders[0].id) : ""
+      );
+      setIsSaveModalVisible(true);
     } catch (error) {
       // console.error("Failed to load folders for save modal:", error);
       Alert.alert("Error", "Could not load your folders.");
@@ -270,6 +279,13 @@ const HistoryScreen: React.FC = () => {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
+            <TouchableOpacity
+              onPress={() => setIsSaveModalVisible(false)}
+              style={{ position: "absolute", top: 12, right: 12, zIndex: 10 }}
+              accessibilityLabel="Close"
+            >
+              <Ionicons name="close" size={28} color="#888" />
+            </TouchableOpacity>
             <Text style={styles.modalTitle}>Save to Folder</Text>
             {isFoldersLoading ? (
               <ActivityIndicator />
@@ -278,15 +294,15 @@ const HistoryScreen: React.FC = () => {
                 <View style={styles.pickerContainer}>
                   <RNPicker
                     selectedValue={selectedFolderId}
-                    onValueChange={(itemValue: string | null) =>
+                    onValueChange={(itemValue: string) =>
                       setSelectedFolderId(itemValue)
                     }
                   >
                     {userFolders.map((folder) => (
                       <RNPicker.Item
-                        key={folder.id}
+                        key={String(folder.id)}
                         label={folder.name}
-                        value={folder.id}
+                        value={String(folder.id)}
                       />
                     ))}
                   </RNPicker>

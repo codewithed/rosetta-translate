@@ -73,7 +73,7 @@ export const addHistoryItem = async (
     );
     await AsyncStorage.setItem(HISTORY_KEY, JSON.stringify(updatedHistory));
   } catch (e) {
-    console.error("Failed to add history item", e);
+    //console.error("Failed to add history item", e);
   }
 };
 
@@ -84,6 +84,7 @@ export const getFolders = async (): Promise<FolderItem[]> => {
     const jsonValue = await AsyncStorage.getItem(FOLDERS_KEY);
     return jsonValue != null ? JSON.parse(jsonValue) : [];
   } catch (e) {
+    //console.error("Failed to get folders from storage", e);
     return [];
   }
 };
@@ -115,7 +116,7 @@ export const createNewFolder = async (name: string): Promise<FolderItem> => {
     await AsyncStorage.setItem(FOLDERS_KEY, JSON.stringify(updatedFolders));
     return finalFolder;
   } catch (error) {
-    console.error("Failed to sync new folder:", error);
+    //console.error("Failed to sync new folder:", error);
     return newFolder;
   }
 };
@@ -127,10 +128,8 @@ export const createFolderOptimistic = async (
   const localId = `local_folder_${Date.now()}`;
   const newFolder: FolderItem = { id: localId, name, isSynced: false };
 
-  // 2. Immediately save this new local folder to AsyncStorage.
-  const folders = await getFolders();
-  folders.push(newFolder);
-  await AsyncStorage.setItem(FOLDERS_KEY, JSON.stringify(folders));
+  // 2. Immediately save this new local folder to AsyncStorage using saveFolder helper
+  await saveFolder(newFolder);
 
   // 3. Sync with the backend in the background (fire-and-forget).
   //    We do NOT `await` this call.
@@ -143,24 +142,27 @@ export const createFolderOptimistic = async (
         isSynced: true,
       };
 
-      // Now, find the temporary folder in storage and replace it with the final, synced version.
+      // Get current folders and remove the temporary local folder
       const allFolders = await getFolders();
-      const index = allFolders.findIndex((f) => f.id === localId);
-      if (index !== -1) {
-        allFolders[index] = finalFolder;
-        await AsyncStorage.setItem(FOLDERS_KEY, JSON.stringify(allFolders));
-        console.log(
-          `Folder '${name}' (local: ${localId}) synced successfully with server ID: ${syncedFolder.id}`
-        );
-      }
+      const updatedFolders = allFolders.filter((f) => f.id !== localId);
+
+      // Add the synced folder with the real server ID
+      updatedFolders.push(finalFolder);
+
+      // Save the updated folders array back to storage
+      await AsyncStorage.setItem(FOLDERS_KEY, JSON.stringify(updatedFolders));
+
+      console.log(
+        `Folder '${name}' (local: ${localId}) synced successfully with server ID: ${syncedFolder.id}`
+      );
     })
     .catch((error) => {
       // FAILURE: The sync failed. The user still has the local folder.
       // You could add logic here for a retry mechanism.
-      console.error(
+      /*(
         `Failed to sync new folder '${name}' (local ID: ${localId}):`,
         error
-      );
+      );*/
     });
 
   // 4. Return the local folder IMMEDIATELY. The UI can now update instantly.
@@ -184,11 +186,11 @@ export const deleteFolder = async (folderId: string): Promise<void> => {
 
     // 3. Sync deletion with the backend
     apiDeleteFolder(folderId).catch((err) => {
-      console.error(`Sync error: deleteFolder ${folderId}`, err);
+      //console.error(`Sync error: deleteFolder ${folderId}`, err);
       // In a real app, you might add logic here to restore the data or queue the deletion
     });
   } catch (e) {
-    console.error("Failed to delete folder from storage", e);
+    //console.error("Failed to delete folder from storage", e);
     throw e; // Propagate error to be caught by the UI handler
   }
 };
@@ -241,9 +243,9 @@ export const saveItemToFolder = async (
     translationId: item.id,
     category: SavedItemCategory.PHRASE,
     folderId: folderId,
-  }).catch((err) =>
-    console.error(`Sync error: saveItemToFolder ${item.id}`, err)
-  );
+  }).catch((err) => {
+    //console.error(`Sync error: saveItemToFolder ${item.id}`, err)
+  });
 
   return newItemData;
 };
@@ -280,9 +282,7 @@ export const toggleFavorite = async (
   await AsyncStorage.setItem(ITEMS_KEY, JSON.stringify(allItems));
 
   // Sync with backend
-  apiToggleFavoriteTranslation(item.id).catch((err) =>
-    console.error(`Sync error: toggleFavorite ${item.id}`, err)
-  );
+  apiToggleFavoriteTranslation(item.id);
 
   if (updatedItem.isFavorite) {
     apiCreateSavedItem({
@@ -290,10 +290,10 @@ export const toggleFavorite = async (
       category: SavedItemCategory.PHRASE,
     }).catch((err) => {
       if (!err.response?.data?.message?.includes("already saved")) {
-        console.error(
+        /* console.error(
           `Sync error: createSavedItem for favorite ${item.id}`,
           err
-        );
+        );*/
       }
     });
   }
@@ -312,9 +312,9 @@ export const deleteItem = async (itemId: string, from: "history" | "saved") => {
     const updatedHistory = history.filter((item) => item.id !== itemId);
     await AsyncStorage.setItem(HISTORY_KEY, JSON.stringify(updatedHistory));
     // Sync deletion
-    apiDeleteTranslation(itemId).catch((err) =>
+    apiDeleteTranslation(itemId); /*.catch((err) =>
       console.error(`Sync error: delete from history ${itemId}`, err)
-    );
+    );*/
   } else if (from === "saved") {
     const savedItems = await getSavedItems();
     const itemToDelete = savedItems.find((item) => item.id === itemId);
@@ -322,8 +322,8 @@ export const deleteItem = async (itemId: string, from: "history" | "saved") => {
     await AsyncStorage.setItem(ITEMS_KEY, JSON.stringify(updatedSavedItems));
     // This assumes the `itemId` is the same as the `translationId` for deletion.
     // A more complex backend might require a specific SavedItem ID.
-    apiDeleteSavedItem(itemId).catch((err) =>
+    apiDeleteSavedItem(itemId); /*.catch((err) =>
       console.error(`Sync error: delete from saved ${itemId}`, err)
-    );
+    );*/
   }
 };

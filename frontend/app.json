@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Rosetta Translate",
-    "slug": "Rosetta Translate",
+    "slug": "rosetta-translate",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -28,13 +28,20 @@
       "permissions": [
         "android.permission.RECORD_AUDIO",
         "android.permission.MODIFY_AUDIO_SETTINGS"
-      ]
+      ],
+      "package": "com.codewithed.rosettatranslate"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
       "expo-audio"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "f5cb0383-9546-4e48-ab81-603ecf6f4b22"
+      }
+    },
+    "owner": "codewithed"
   }
 }
