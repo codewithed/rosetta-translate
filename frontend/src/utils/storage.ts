@@ -73,7 +73,7 @@ export const addHistoryItem = async (
     );
     await AsyncStorage.setItem(HISTORY_KEY, JSON.stringify(updatedHistory));
   } catch (e) {
-    console.error("Failed to add history item", e);
+    //console.error("Failed to add history item", e);
   }
 };
 
@@ -84,7 +84,7 @@ export const getFolders = async (): Promise<FolderItem[]> => {
     const jsonValue = await AsyncStorage.getItem(FOLDERS_KEY);
     return jsonValue != null ? JSON.parse(jsonValue) : [];
   } catch (e) {
-    console.error("Failed to get folders from storage", e);
+    //console.error("Failed to get folders from storage", e);
     return [];
   }
 };
@@ -116,7 +116,7 @@ export const createNewFolder = async (name: string): Promise<FolderItem> => {
     await AsyncStorage.setItem(FOLDERS_KEY, JSON.stringify(updatedFolders));
     return finalFolder;
   } catch (error) {
-    console.error("Failed to sync new folder:", error);
+    //console.error("Failed to sync new folder:", error);
     return newFolder;
   }
 };
@@ -159,10 +159,10 @@ export const createFolderOptimistic = async (
     .catch((error) => {
       // FAILURE: The sync failed. The user still has the local folder.
       // You could add logic here for a retry mechanism.
-      console.error(
+      /*(
         `Failed to sync new folder '${name}' (local ID: ${localId}):`,
         error
-      );
+      );*/
     });
 
   // 4. Return the local folder IMMEDIATELY. The UI can now update instantly.
@@ -243,9 +243,9 @@ export const saveItemToFolder = async (
     translationId: item.id,
     category: SavedItemCategory.PHRASE,
     folderId: folderId,
-  }).catch((err) =>
-    console.error(`Sync error: saveItemToFolder ${item.id}`, err)
-  );
+  }).catch((err) => {
+    //console.error(`Sync error: saveItemToFolder ${item.id}`, err)
+  });
 
   return newItemData;
 };
