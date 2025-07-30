@@ -54,7 +54,7 @@ export const createHistoryItemOptimistic = async (
     const updatedHistory = [tempHistoryItem, ...history];
     await AsyncStorage.setItem(HISTORY_KEY, JSON.stringify(updatedHistory));
   } catch (e) {
-    console.error("Failed to add temporary history item", e);
+    // console.error("Failed to add temporary history item", e);
     throw e; // Abort if we can't save locally.
   }
 
@@ -82,7 +82,7 @@ export const createHistoryItemOptimistic = async (
 
     return finalHistoryItem;
   } catch (error) {
-    console.error("Failed to sync new history item:", error);
+    // console.error("Failed to sync new history item:", error);
     // If sync fails, the unsynced local item remains in storage.
     return tempHistoryItem;
   }
@@ -105,7 +105,7 @@ export const saveTranslationToHistory = async (
 
     await AsyncStorage.setItem(HISTORY_KEY, JSON.stringify(existingHistory));
   } catch (error) {
-    console.error("Error saving translation to history:", error);
+    // console.error("Error saving translation to history:", error);
   }
 };
 
@@ -118,7 +118,7 @@ export const getTranslationHistory = async (): Promise<TranslationItem[]> => {
     const history: TranslationItem[] = JSON.parse(historyString);
     return history.sort((a, b) => b.timestamp - a.timestamp);
   } catch (error) {
-    console.error("Error getting translation history:", error);
+    // console.error("Error getting translation history:", error);
     return [];
   }
 };
@@ -127,7 +127,7 @@ export const clearTranslationHistory = async () => {
   try {
     await AsyncStorage.removeItem(HISTORY_KEY);
   } catch (error) {
-    console.error("Error clearing translation history:", error);
+    // console.error("Error clearing translation history:", error);
   }
 };
 
@@ -153,7 +153,7 @@ export const deleteTranslationFromHistory = async (translationId: string) => {
     );
     await AsyncStorage.setItem(HISTORY_KEY, JSON.stringify(filteredHistory));
   } catch (error) {
-    console.error("Error deleting translation from history:", error);
+    // console.error("Error deleting translation from history:", error);
   }
 };
 
@@ -164,7 +164,7 @@ export const getTranslationById = async (
     const existingHistory = await getTranslationHistory();
     return existingHistory.find((item) => item.id === translationId) || null;
   } catch (error) {
-    console.error("Error getting translation by ID:", error);
+    // console.error("Error getting translation by ID:", error);
     return null;
   }
 };
@@ -174,7 +174,7 @@ export const getHistoryCount = async (): Promise<number> => {
     const existingHistory = await getTranslationHistory();
     return existingHistory.length;
   } catch (error) {
-    console.error("Error getting history count:", error);
+    // console.error("Error getting history count:", error);
     return 0;
   }
 };
@@ -193,7 +193,7 @@ export const batchSaveTranslations = async (
     );
     await AsyncStorage.setItem(HISTORY_KEY, JSON.stringify(mergedHistory));
   } catch (error) {
-    console.error("Error batch saving translations:", error);
+    // console.error("Error batch saving translations:", error);
   }
 };
 
@@ -206,7 +206,7 @@ export const batchDeleteTranslations = async (translationIds: string[]) => {
     );
     await AsyncStorage.setItem(HISTORY_KEY, JSON.stringify(filteredHistory));
   } catch (error) {
-    console.error("Error batch deleting translations:", error);
+    // console.error("Error batch deleting translations:", error);
   }
 };
 
@@ -219,6 +219,6 @@ export const pruneOldHistory = async (maxItems: number = 1000) => {
       console.log(`Pruned history: kept ${maxItems} most recent items`);
     }
   } catch (error) {
-    console.error("Error pruning history:", error);
+    // console.error("Error pruning history:", error);
   }
 };
