@@ -1,6 +1,6 @@
 # Rosetta Translate
 
-Rosetta Translate is a multilingual, multi-input translation assistant built with a modern tech stack. It enables users to translate between languages using text, speech, image (OCR), and handwriting input. The app supports real-time bilingual conversations, translation history, saved phrases, and folder organization. Rosetta is designed for speed, accessibility, and privacy, with a secure backend and offline support.
+Rosetta Translate is a multilingual, multi-input translation assistant built with a modern tech stack. It enables users to translate between languages using text, speech, and image (OCR). The app supports real-time bilingual conversations, translation history, saved phrases, and folder organization. Rosetta is designed for speed, accessibility, and privacy, with a secure backend and offline support.
 
 ## 🚀 Tech Stack
 
@@ -10,8 +10,6 @@ Rosetta Translate is a multilingual, multi-input translation assistant built wit
 - TypeScript
 - AsyncStorage (offline history & saved items)
 - Expo Camera & Audio (speech/image input)
-- @react-native-picker/picker (folder selection)
-- react-navigation (navigation & tabs)
 
 ### Backend
 
@@ -71,7 +69,7 @@ Scan the QR code with Expo Go or run on a simulator.
 
 ### Frontend
 
-- **Input**: Users enter text, record speech, capture images, or draw handwriting.
+- **Input**: Users enter text, record speech, or capture images.
 - **Processing**: The app sends input to the backend via REST API.
 - **Translation**: The backend uses Google APIs for translation, OCR, and speech recognition.
 - **Output**: Translated text is displayed, with options for TTS playback, copy, save, or favorite.
