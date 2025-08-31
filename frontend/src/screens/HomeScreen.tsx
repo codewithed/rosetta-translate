@@ -252,8 +252,9 @@ const HomeScreen: React.FC = () => {
             console.log(
               `[HomeScreen] handleSpeechToText: Attempting to list contents of parent directory: ${parentDirUri}`
             );
-            const dirContents =
-              await FileSystem.readDirectoryAsync(parentDirUri);
+            const dirContents = await FileSystem.readDirectoryAsync(
+              parentDirUri
+            );
             console.log(
               `[HomeScreen] handleSpeechToText: Contents of ${parentDirUri}:`,
               dirContents
@@ -390,8 +391,9 @@ const HomeScreen: React.FC = () => {
           // Clean up previous audio file if it exists
           if (currentPlaybackUri && currentPlaybackUri !== tempAudioUri) {
             try {
-              const oldFileInfo =
-                await FileSystem.getInfoAsync(currentPlaybackUri);
+              const oldFileInfo = await FileSystem.getInfoAsync(
+                currentPlaybackUri
+              );
               if (oldFileInfo.exists) {
                 await FileSystem.deleteAsync(currentPlaybackUri, {
                   idempotent: true,
@@ -630,7 +632,7 @@ const HomeScreen: React.FC = () => {
     setIsRecording(false);
     try {
       await audioRecorder.stop();
-      const uri = `file:///${audioRecorder.uri}`;
+      const uri = audioRecorder.uri;
       if (uri) await handleSpeechToText(uri);
     } catch (error: any) {
       Alert.alert("Error", `Failed to stop recording: ${error.message}`);
@@ -657,8 +659,6 @@ const HomeScreen: React.FC = () => {
     setSelectedImage(null);
     setAudioUri(null);
   };
-
-  // ... handleSpeechToText and handleTextToSpeech logic remains ...
 
   return (
     <KeyboardAvoidingView
