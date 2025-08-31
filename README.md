@@ -1,6 +1,6 @@
 # Rosetta Translate
 
-Rosetta Translate is a multilingual, multi-input translation assistant built with a modern tech stack. It enables users to translate between languages using text, speech, and image (OCR) input. The app supports real-time bilingual conversations, translation history, saved phrases, and folder organization. Rosetta is designed for speed, accessibility, and privacy, with a secure backend.
+Rosetta Translate is a multilingual, multi-input translation mobile app built with a modern tech stack. It enables users to translate between languages using text, speech, and image (OCR) input. The app supports real-time bilingual conversations, translation history, saved phrases, and folder organization. Rosetta is designed for speed, accessibility, and privacy, with a secure backend.
 
 ## 🚀 Tech Stack
 
@@ -32,6 +32,7 @@ Rosetta Translate is a multilingual, multi-input translation assistant built wit
 
 ### Prerequisites
 
+- Google Cloud Platform account with TTS, Translation, STT, ML (for OCR) APIs enabled
 - Node.js & npm (or yarn)
 - Java 21+ (for backend)
 - PostgreSQL (local or cloud)
