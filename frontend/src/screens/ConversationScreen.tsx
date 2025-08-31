@@ -135,7 +135,7 @@ const ConversationScreen: React.FC = () => {
       // Start playback using async function
       const startPlayback = async () => {
         try {
-          await player.play();
+          player.play();
           console.log("Playback started successfully for turn:", turnId);
           setCurrentPlayingId(turnId);
           setConversationTurns((prev) =>
@@ -259,18 +259,9 @@ const ConversationScreen: React.FC = () => {
           return;
         }
 
-        // Handle URI formatting
-        let prefixedAudioUri = audioUri;
-        if (!audioUri.startsWith("file://")) {
-          if (audioUri.startsWith("/")) {
-            prefixedAudioUri = `file://${audioUri}`;
-          } else {
-            prefixedAudioUri = `file:///${audioUri}`;
-          }
-        }
         console.log(
           "[ConversationScreen] processTurn: Prefixed audioUri for FileSystem:",
-          prefixedAudioUri
+          audioUri
         );
 
         // Wait for file to be ready
@@ -279,15 +270,15 @@ const ConversationScreen: React.FC = () => {
         );
         await new Promise((resolve) => setTimeout(resolve, 500));
 
-        const fileInfo = await FileSystem.getInfoAsync(prefixedAudioUri);
+        const fileInfo = await FileSystem.getInfoAsync(audioUri);
         console.log(
-          `[ConversationScreen] processTurn: FileInfo for ${prefixedAudioUri}:`,
+          `[ConversationScreen] processTurn: FileInfo for ${audioUri}:`,
           JSON.stringify(fileInfo)
         );
 
         if (!fileInfo.exists || fileInfo.size === 0) {
           console.warn(
-            `[ConversationScreen] processTurn: File does not exist or is empty at ${prefixedAudioUri}.`
+            `[ConversationScreen] processTurn: File does not exist or is empty at ${audioUri}.`
           );
           Alert.alert(
             "File Error",
@@ -298,13 +289,13 @@ const ConversationScreen: React.FC = () => {
         }
 
         const fileName =
-          prefixedAudioUri.split("/").pop() || Platform.OS === "ios"
+          audioUri.split("/").pop() || Platform.OS === "ios"
             ? "recording.wav"
             : "recording.3gp";
         const fileType = Platform.OS === "ios" ? "audio/wav" : "audio/awb";
 
         const sttResponse = await apiSpeechToText(
-          { uri: prefixedAudioUri, name: fileName, type: fileType },
+          { uri: audioUri, name: fileName, type: fileType },
           sourceLangWithRegion
         );
         if (
@@ -350,7 +341,9 @@ const ConversationScreen: React.FC = () => {
 
       // Use a more unique filename and ensure proper path
       const timestamp = Date.now();
-      const ttsAudioUri = `${FileSystem.documentDirectory}tts_${timestamp}_${Math.random().toString(36).substr(2, 9)}.mp3`;
+      const ttsAudioUri = `${
+        FileSystem.documentDirectory
+      }tts_${timestamp}_${Math.random().toString(36).substr(2, 9)}.mp3`;
 
       console.log("[ConversationScreen] Writing TTS audio to:", ttsAudioUri);
 
@@ -453,7 +446,7 @@ const ConversationScreen: React.FC = () => {
         );
         await audioRecorder.prepareToRecordAsync();
         console.log("[ConversationScreen] handleRecord: Starting recording...");
-        await audioRecorder.record();
+        audioRecorder.record();
         console.log(
           "[ConversationScreen] handleRecord: Recording started successfully"
         );

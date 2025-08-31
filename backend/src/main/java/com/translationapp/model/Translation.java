@@ -1,8 +1,19 @@
 package com.translationapp.model;
 
-import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.UUID;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.Lob;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "translations")
@@ -36,6 +47,9 @@ public class Translation {
 
     @Column(name = "is_favorite", nullable = false)
     private boolean isFavorite = false; // Default to not favorite
+
+    @Column(name = "is_saved", nullable = false)
+    private boolean isSaved = false; // Default to not false
 
     @Lob // For potentially larger JSON string for tags
     @Column(name = "tags")
@@ -122,6 +136,14 @@ public class Translation {
 
     public void setFavorite(boolean favorite) {
         isFavorite = favorite;
+    }
+
+    public boolean isSaved() {
+        return isSaved;
+    }
+
+    public void setIsSaved(boolean saved) {
+        isSaved = saved;
     }
 
     public String getTags() {
