@@ -23,7 +23,7 @@ Rosetta Translate is a multilingual, multi-input translation mobile app built wi
 - **Text, Speech, and Image Translation**: Translate using any input method, with a wide selection of languages and dialects.
 - **Real-Time Conversation Mode**: Bilingual conversation with speech input/output for both speakers.
 - **Translation History**: All translations are automatically saved and grouped by recency.
-- **Saved Phrases & Folder Organization**: Save translations, organize them in custom folders
+- **Saved Phrases & Folder Organization**: Save translations and organize them in custom folders.
 - **Favorites**: Mark translations as favorites for quick access.
 - **Offline Support**: History and saved items are available offline.
 - **Authentication**: Secure login and registration with JWT.
